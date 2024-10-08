@@ -61,6 +61,33 @@ model XPrompt {
   type             PromptType @default(SUBJECT)
 }
 
+model User {
+  id            String    @id
+  discordUserId String    @unique
+  email         String    @unique
+  createAt      DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  products      Product[]
+  bundle        Bundle[]
+}
+
+model Bundle {
+  id       String    @id
+  name     String
+  premium  Boolean
+  products Product[]
+  users    User[]
+}
+
+model Product {
+  id            String   @id
+  name          String
+  premium       Boolean
+  discordRoleId String
+  bundle        Bundle[]
+  users         User[]
+}
+
 enum XPostType {
   POST // direct post without reply
   REPLY
