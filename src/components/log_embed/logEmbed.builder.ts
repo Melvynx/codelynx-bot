@@ -8,13 +8,13 @@ type LogEmbedBuilderOptions = {
   message: string;
 };
 
-export const logEmbedBuilder = ({ logLevel, message }: LogEmbedBuilderOptions) => {
+export function logEmbedBuilder({ logLevel, message }: LogEmbedBuilderOptions) {
   const now = new Date(); // Heure actuelle
   const timestampMinus15Minutes = getTime(subMinutes(now, 15)); // -15 minutes
   const timestampPlus15Minutes = getTime(addMinutes(now, 15)); // +15 minutes
   const logUrl = railwayLogUrlBuilder(
     timestampMinus15Minutes,
-    timestampPlus15Minutes
+    timestampPlus15Minutes,
   );
 
   const embed = new EmbedBuilder()
@@ -46,4 +46,4 @@ export const logEmbedBuilder = ({ logLevel, message }: LogEmbedBuilderOptions) =
   }
 
   return embed;
-};
+}

@@ -1,19 +1,18 @@
-import type { CommandRunContext, CommandRunResult, MessageCommand, SlashCommand } from "arcscord";
-import { Command, CommandError, error } from "arcscord";
-import { searchMessageBuilder, searchSlashBuilder } from "./search.builder";
 import type { SearchResult } from "@/utils/search/search.type";
-import { search } from "@/utils/search/search.util";
+import type { CommandRunContext, CommandRunResult, MessageCommand, SlashCommand } from "arcscord";
 import type { ButtonBuilder } from "discord.js";
-import { ActionRowBuilder, EmbedBuilder } from "discord.js";
 import { detailedSearchResultBuilder } from "@/components/detailled_search_result/detailed_search_result.builder";
+import { search } from "@/utils/search/search.util";
+import { Command, CommandError, error } from "arcscord";
+import { ActionRowBuilder, EmbedBuilder } from "discord.js";
+import { searchMessageBuilder, searchSlashBuilder } from "./search.builder";
 
 export class SearchCommand extends Command implements SlashCommand, MessageCommand {
-
   messageBuilder = searchMessageBuilder;
 
   name = "search";
 
-  slashBuilder =  searchSlashBuilder;
+  slashBuilder = searchSlashBuilder;
 
   defaultReplyOptions = {
     ephemeral: false,
@@ -35,9 +34,8 @@ export class SearchCommand extends Command implements SlashCommand, MessageComma
         }));
       }
       result = result2;
-
-    } else if (ctx.interaction.isChatInputCommand()) {
-
+    }
+    else if (ctx.interaction.isChatInputCommand()) {
       const query = ctx.interaction.options.getString("query", false) || "nothing";
       const [result2, err] = await search(query);
       if (err !== null || result2 === null) {
@@ -50,7 +48,8 @@ export class SearchCommand extends Command implements SlashCommand, MessageComma
         }));
       }
       result = result2;
-    } else {
+    }
+    else {
       return error(new CommandError({
         message: "invalid type",
         command: this,
@@ -68,8 +67,8 @@ export class SearchCommand extends Command implements SlashCommand, MessageComma
     const embed = new EmbedBuilder()
       .setTitle(`Résultat de : "${query}"`)
       .setColor("Green")
-      .setDescription(`**X :** [${result.xPosts[0].title}](${result.xPosts[0].url})`
-      + (result.youtubeVideos.length > 0 ? `\n**Youtube :** [${result.youtubeVideos[0].title}](${result.youtubeVideos[0].url})` : ""))
+      .setDescription(`**X :** [${result.xPosts[0].title}](${result.xPosts[0].url})${
+        result.youtubeVideos.length > 0 ? `\n**Youtube :** [${result.youtubeVideos[0].title}](${result.youtubeVideos[0].url})` : ""}`)
       .setFooter({
         text: "Pour optenir un résultat détailler, cliquer sur le bouton en dessous !",
       })
@@ -80,5 +79,4 @@ export class SearchCommand extends Command implements SlashCommand, MessageComma
       components: [new ActionRowBuilder<ButtonBuilder>().addComponents(detailedSearchResultBuilder(result.id))],
     });
   }
-
 }

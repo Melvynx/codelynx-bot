@@ -1,11 +1,10 @@
 import type { ButtonRunContext, ButtonRunResult } from "arcscord";
 import { anyToError, Button, ButtonError, CUSTOM_ID_SEPARATOR, error, ok } from "arcscord";
-import { RENAME_LINK_THREAD_ID, renameLinkThreadBuilder } from "./rename_link_thread.builder";
 import { ChannelType, EmbedBuilder } from "discord.js";
 import { newLinkThreadNameBuilder } from "../new_link_thread_name/new_link_thread_name.builder";
+import { RENAME_LINK_THREAD_ID, renameLinkThreadBuilder } from "./rename_link_thread.builder";
 
 export class RenameLinkThread extends Button {
-
   builder = renameLinkThreadBuilder;
 
   name = "renameLinkThread";
@@ -42,14 +41,14 @@ export class RenameLinkThread extends Button {
     try {
       await ctx.interaction.showModal(newLinkThreadNameBuilder.toJSON());
       return ok("showed modal");
-    } catch (e) {
+    }
+    catch (e) {
       return error(new ButtonError({
         interaction: ctx.interaction,
         message: "Failed to show modal!",
         baseError: anyToError(e),
       }));
     }
-
   }
 
   private async isAllowed(ctx: ButtonRunContext): Promise<boolean> {
@@ -67,5 +66,4 @@ export class RenameLinkThread extends Button {
 
     return false;
   }
-
 }

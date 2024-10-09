@@ -1,5 +1,5 @@
-import { LynxLogger } from "@/utils/log/log.util";
 import type { CommandRunContext, CommandRunResult, SlashCommand } from "arcscord";
+import { LynxLogger } from "@/utils/log/log.util";
 import { Command } from "arcscord";
 import { pingSlashBuilder } from "./ping.builder";
 

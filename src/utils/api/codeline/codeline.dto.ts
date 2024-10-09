@@ -8,7 +8,7 @@ export const userSchema = z.object({
         z.object({
           id: z.string(),
           title: z.string(),
-        })
+        }),
       ),
     })
     .optional()

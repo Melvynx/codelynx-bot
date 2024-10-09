@@ -1,22 +1,20 @@
 import type { Result } from "arcscord";
-import { defaultLogger } from "arcscord";
-import { anyToError, error, ok } from "arcscord";
-import { OpenAIError } from "../../error/openai_error.class";
-import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources";
-import { responseSchema, searchPrompt } from "./x.const";
 import type { ChatCompletionMessageToolCall, ChatCompletionTool } from "openai/src/resources/chat/completions";
+import { anyToError, defaultLogger, error, ok } from "arcscord";
+import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { search } from "./functions/search";
-import { prisma } from "../../prisma/prisma.util";
+import { OpenAIError } from "../../error/openai_error.class";
 import { generateId } from "../../id/id.util";
+import { prisma } from "../../prisma/prisma.util";
 import { searchLog } from "../search.util";
+import { search } from "./functions/search";
+import { responseSchema, searchPrompt } from "./x.const";
 import Chat = OpenAI.Chat;
 
 const client = new OpenAI();
 
-const executeFunction = async(call: ChatCompletionMessageToolCall.Function): Promise<string> => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+async function executeFunction(call: ChatCompletionMessageToolCall.Function): Promise<string> {
   const unsavedArgs = JSON.parse(call.arguments);
   switch (call.name) {
     case search.name: {
@@ -31,9 +29,9 @@ const executeFunction = async(call: ChatCompletionMessageToolCall.Function): Pro
       return "{\"error\":\"function don't exist\"}";
     }
   }
-};
+}
 
-const pushToDB = async(completion: Chat.ChatCompletion, messages: ChatCompletionMessageParam[]): Promise<void> => {
+async function pushToDB(completion: Chat.ChatCompletion, messages: ChatCompletionMessageParam[]): Promise<void> {
   try {
     await prisma.xPrompt.create({
       data: {
@@ -46,13 +44,13 @@ const pushToDB = async(completion: Chat.ChatCompletion, messages: ChatCompletion
         type: "SEARCH",
       },
     });
-  } catch (e) {
+  }
+  catch (e) {
     searchLog.error(`failed to create db : ${anyToError(e).message}`);
   }
-};
+}
 
-export const searchX = async(term: string): Promise<Result<string[], OpenAIError>> => {
-
+export async function searchX(term: string): Promise<Result<string[], OpenAIError>> {
   const tools: ChatCompletionTool[] = [
     {
       type: "function",
@@ -77,17 +75,16 @@ export const searchX = async(term: string): Promise<Result<string[], OpenAIError
 
   let i = 0;
   while (i <= 6) {
-
     const completion = await client.chat.completions.create({
       model: "gpt-4o",
-      messages: messages,
-      tools: tools,
-      "response_format": {
+      messages,
+      tools,
+      response_format: {
         type: "json_object",
       },
-      "tool_choice": i < 3 ? "auto" : "none",
+      tool_choice: i < 3 ? "auto" : "none",
       temperature: 0.2,
-      "top_p": 0.2,
+      top_p: 0.2,
     });
 
     const message = completion.choices[0]?.message;
@@ -112,7 +109,7 @@ export const searchX = async(term: string): Promise<Result<string[], OpenAIError
         const response = await executeFunction(toolCall.function);
         messages.push({
           role: "tool",
-          "tool_call_id": toolCall.id,
+          tool_call_id: toolCall.id,
           content: response,
         });
       }
@@ -138,12 +135,11 @@ export const searchX = async(term: string): Promise<Result<string[], OpenAIError
 
     try {
       if (content.includes("}{")) {
-        content = content.split("}{")[0] + "}";
+        content = `${content.split("}{")[0]}}`;
       }
       if (content.includes("}\n{")) {
-        content = content.split("}\n{")[0] + "}";
+        content = `${content.split("}\n{")[0]}}`;
       }
-
 
       const data = responseSchema.parse(JSON.parse(content));
 
@@ -164,8 +160,8 @@ export const searchX = async(term: string): Promise<Result<string[], OpenAIError
 
       void pushToDB(completion, messages);
       return ok(data.ids);
-
-    } catch (e) {
+    }
+    catch (e) {
       void pushToDB(completion, messages);
 
       const err = new OpenAIError({
@@ -186,4 +182,4 @@ export const searchX = async(term: string): Promise<Result<string[], OpenAIError
   }
 
   return ok([term]);
-};
+}

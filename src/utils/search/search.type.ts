@@ -5,9 +5,9 @@ export type SearchResult = {
   xPosts: PostInfos[];
   id: string;
   query: string;
-}
+};
 
 export type PostInfos = {
   title: string;
   url: string;
-}
+};

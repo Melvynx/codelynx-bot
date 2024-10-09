@@ -1,50 +1,55 @@
 {
-	"name": "codeline_bot",
-	"version": "0.1.0",
-	"author": "Arcoz0308",
-	"scripts": {
-		"build": "npx prisma generate",
-		"dev": "npx nodemon --exec node --import=@swc-node/register/esm-register ./src/index.ts dev debug",
-		"start": "node --import @swc-node/register/esm-register src/index.ts",
-		"script:import_from_tweetsjs": "node --import=@swc-node/register/esm-register ./script/import_from_tweetsjs/index.ts dev script",
-		"script:load_thread_content": " node --import=@swc-node/register/esm-register ./script/load_thread_content/index.ts dev script",
-		"script:load_subject": "node --import=@swc-node/register/esm-register ./script/load_subject/index.ts dev script",
-		"script:api": "node --import=@swc-node/register/esm-register ./script/test_api/index.ts dev script",
-		"db:gen": "prisma generate",
-		"db:migrate": "prisma migrate dev",
-		"postinstall": "prisma generate"
-	},
-	"dependencies": {
-		"@googleapis/youtube": "^19.0.0",
-		"@prisma/client": "5.19.1",
-		"@sapphire/snowflake": "^3.5.3",
-		"@swc-node/core": "^1.13.1",
-		"@swc-node/register": "^1.9.1",
-		"@types/node": "^20.12.12",
-		"arcscord": "0.1.18",
-		"date-fns": "^4.1.0",
-		"discord-api-types": "^0.37.83",
-		"discord.js": "^14.15.2",
-		"dotenv": "^16.4.5",
-		"openai": "^4.53.2",
-		"ts-log": "^2.2.7",
-		"tsconfig-paths": "^4.2.0",
-		"tsx": "^4.15.5",
-		"typescript": "^5.4.5",
-		"zod": "^3.23.8",
-		"zod-to-json-schema": "^3.23.2"
-	},
-	"devDependencies": {
-		"@arcoz/eslint-config": "^1.1.0",
-		"@types/node": "^20.12.7",
-		"fastify": "^4.28.1",
-		"nodemon": "^3.1.0",
-		"prisma": "^5.19.1",
-		"vite-tsconfig-paths": "^4.3.2",
-		"vitest": "^1.5.2"
-	},
-	"type": "module",
-	"engines": {
-		"node": "20"
-	}
+  "name": "codeline_bot",
+  "type": "module",
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.3.0",
+  "author": "Arcoz0308",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build": "npx prisma generate",
+    "dev": "npx nodemon --exec node --import=@swc-node/register/esm-register ./src/index.ts dev debug",
+    "start": "node --import @swc-node/register/esm-register src/index.ts",
+    "script:import_from_tweetsjs": "node --import=@swc-node/register/esm-register ./script/import_from_tweetsjs/index.ts dev script",
+    "script:load_thread_content": " node --import=@swc-node/register/esm-register ./script/load_thread_content/index.ts dev script",
+    "script:load_subject": "node --import=@swc-node/register/esm-register ./script/load_subject/index.ts dev script",
+    "script:api": "node --import=@swc-node/register/esm-register ./script/test_api/index.ts dev script",
+    "db:gen": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "postinstall": "prisma generate",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@googleapis/youtube": "^19.0.0",
+    "@prisma/client": "5.19.1",
+    "@sapphire/snowflake": "^3.5.3",
+    "@swc-node/core": "^1.13.1",
+    "@swc-node/register": "^1.9.1",
+    "@types/node": "^20.12.12",
+    "arcscord": "0.1.18",
+    "date-fns": "^4.1.0",
+    "discord-api-types": "^0.37.83",
+    "discord.js": "^14.15.2",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "openai": "4.67.3",
+    "ts-log": "^2.2.7",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.15.5",
+    "typescript": "^5.4.5",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.2"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^3.7.3",
+    "@types/node": "^20.12.7",
+    "eslint": "^9.11.1",
+    "nodemon": "^3.1.0",
+    "prisma": "^5.19.1",
+    "vite-tsconfig-paths": "^4.3.2",
+    "vitest": "^1.5.2"
+  }
 }

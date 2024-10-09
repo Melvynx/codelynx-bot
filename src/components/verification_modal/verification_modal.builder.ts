@@ -21,10 +21,10 @@ const nameInput = new TextInputBuilder()
 
 const actionRows = [
   new ActionRowBuilder<TextInputBuilder>().addComponents(
-    emailInput
+    emailInput,
   ),
   new ActionRowBuilder<TextInputBuilder>().addComponents(
-    nameInput
+    nameInput,
   ),
 ];
 

@@ -1,8 +1,8 @@
-import { env } from "@/utils/env/env.util";
 import type { ArcClient, Result } from "arcscord";
+import type { CategoryChildChannel, GuildMember } from "discord.js";
+import { env } from "@/utils/env/env.util";
 import { anyToError, BaseError, error, ok } from "arcscord";
-import type { GuildMember } from "discord.js";
-import { ChannelType, type CategoryChildChannel } from "discord.js";
+import { ChannelType } from "discord.js";
 
 /**
  * Check si un utilisateur a crée un ticket via sont ID
@@ -10,35 +10,37 @@ import { ChannelType, type CategoryChildChannel } from "discord.js";
  * @param userId id de l'utilisateur
  * @returns Boolean
  */
-export const isUserHaveTicket = (
-  ticketList: CategoryChildChannel[],
-  userId: string
-): boolean => ticketList.some(
-  (c: CategoryChildChannel) => c.type === ChannelType.GuildText && c.topic && c.topic.includes(userId)
-);
+export function isUserHaveTicket(ticketList: CategoryChildChannel[], userId: string): boolean {
+  return ticketList.some(
+    (c: CategoryChildChannel) => c.type === ChannelType.GuildText && c.topic && c.topic.includes(userId),
+  );
+}
 
-export const getUnverifiedMembers = async(client: ArcClient): Promise<Result<GuildMember[], BaseError>> => {
+export async function getUnverifiedMembers(client: ArcClient): Promise<Result<GuildMember[], BaseError>> {
   let guild, members;
   try {
     guild = await client.guilds.fetch(env.SERVER_ID);
-    if (!guild) return error(
-      new BaseError({
-        message: "Unable to fetch Codeline Guild",
-      })
-    );
-  } catch (e) {
+    if (!guild) {
+      return error(
+        new BaseError({
+          message: "Unable to fetch Codeline Guild",
+        }),
+      );
+    }
+  }
+  catch (e) {
     return error(
       new BaseError({
         message: `Unable to fetch Codeline Guild, error ${anyToError(e).message}`,
         baseError: anyToError(e),
-      })
+      }),
     );
   }
 
-
   try {
     members = (await guild.members.fetch()).map(m => m);
-  } catch (e) {
+  }
+  catch (e) {
     return error(new BaseError({
       message: `Unable to fetch Members, error ${anyToError(e).message},`,
       baseError: anyToError(e),
@@ -48,4 +50,4 @@ export const getUnverifiedMembers = async(client: ArcClient): Promise<Result<Gui
   return ok(members.filter(m => !m.roles.cache.has(env.LYNX_ROLE_ID)
     && !m.user.bot
     && m.joinedTimestamp));
-};
+}

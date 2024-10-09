@@ -1,14 +1,14 @@
+import type { XPost, XPostType, XThread } from "@prisma/client";
 import * as fs from "node:fs";
+import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import type { XPost, XThread } from "@prisma/client";
-import { PrismaClient, type XPostType } from "@prisma/client";
 
 const basicTweetSchema = z.object({
   id: z.string(),
-  "full_text": z.string(),
-  "created_at": z.string().transform((str) => new Date(str)),
-  "in_reply_to_user_id": z.string().optional(),
-  "in_reply_to_status_id_str": z.string().optional(),
+  full_text: z.string(),
+  created_at: z.string().transform(str => new Date(str)),
+  in_reply_to_user_id: z.string().optional(),
+  in_reply_to_status_id_str: z.string().optional(),
 });
 
 const tweetsSchema = z.array(z.object({
@@ -19,7 +19,7 @@ type TweetInfos = {
   json: string;
   tweet: z.infer<typeof basicTweetSchema>;
   type: XPostType;
-}
+};
 
 async function main(): Promise<void> {
   const start = Date.now();
@@ -30,13 +30,13 @@ async function main(): Promise<void> {
   const baseTweets = tweetsSchema.parse(data);
   const tweets: TweetInfos[] = [];
 
-  const isReplyToOtherOne = (tweet: z.infer<typeof basicTweetSchema>): boolean =>  {
+  const isReplyToOtherOne = (tweet: z.infer<typeof basicTweetSchema>): boolean => {
     if (tweet.in_reply_to_user_id) {
       if (tweet.in_reply_to_user_id !== "1439893592248659975") {
         return true;
       }
 
-      const beforeTweet = baseTweets.find((t) => t.tweet.id === tweet.in_reply_to_status_id_str || "");
+      const beforeTweet = baseTweets.find(t => t.tweet.id === tweet.in_reply_to_status_id_str || "");
       if (!beforeTweet) {
         return true;
       }
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     tweets.push({
       tweet: baseTweet,
       json: JSON.stringify(data[i - 1], undefined, 2),
-      type: type,
+      type,
     });
   }
   const sortedTweets = tweets.sort((a, b) => a.tweet.created_at.getTime() - b.tweet.created_at.getTime());
@@ -81,8 +81,7 @@ async function main(): Promise<void> {
 
   for (const tweet of sortedTweets) {
     if (tweet.tweet.in_reply_to_status_id_str
-      && sortedTweets.find((t) => t.tweet.id === tweet.tweet.in_reply_to_status_id_str)) {
-
+      && sortedTweets.find(t => t.tweet.id === tweet.tweet.in_reply_to_status_id_str)) {
       const threadId = threadsIds.get(tweet.tweet.in_reply_to_status_id_str) || tweet.tweet.in_reply_to_status_id_str;
 
       if (!threadsIds.has(threadId)) {
@@ -92,7 +91,7 @@ async function main(): Promise<void> {
         });
         threadsIds.set(threadId, threadId);
 
-        const index = dbTweet.findIndex((t) => t.id === threadId);
+        const index = dbTweet.findIndex(t => t.id === threadId);
         if (index > -1) {
           dbTweet[index].threadId = threadId;
         }
@@ -101,22 +100,21 @@ async function main(): Promise<void> {
       dbTweet.push({
         id: tweet.tweet.id,
         content: tweet.tweet.full_text,
-        url: "https://x.com/melvynxdev/status/" + tweet.tweet.id,
+        url: `https://x.com/melvynxdev/status/${tweet.tweet.id}`,
         createAt: tweet.tweet.created_at,
         type: tweet.type,
         fullJson: tweet.json,
-        threadId: threadId,
+        threadId,
         previousPostId: tweet.tweet.in_reply_to_status_id_str,
       });
 
       threadsIds.set(tweet.tweet.id, threadId);
-
-    } else {
-
+    }
+    else {
       dbTweet.push({
         id: tweet.tweet.id,
         content: tweet.tweet.full_text,
-        url: "https://x.com/melvynxdev/status/" + tweet.tweet.id,
+        url: `https://x.com/melvynxdev/status/${tweet.tweet.id}`,
         createAt: tweet.tweet.created_at,
         type: tweet.type,
         fullJson: tweet.json,
@@ -142,7 +140,6 @@ async function main(): Promise<void> {
     skipDuplicates: true,
   });
   console.log(`FINISHED in ${Math.round((Date.now() - start) / 1000)}s`);
-
 }
 
 void main();

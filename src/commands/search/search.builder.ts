@@ -6,7 +6,7 @@ export const searchSlashBuilder = new SlashCmdBuilder()
   .setDMPermission(false)
   .setNameLocalization("fr", "rechercher")
   .setDescriptionLocalization("fr", "rechercher un contenu de Melvyn sur X et sur Youtube")
-  .addStringOption((option) => option
+  .addStringOption(option => option
     .setMinLength(2)
     .setMaxLength(100)
     .setRequired(true)

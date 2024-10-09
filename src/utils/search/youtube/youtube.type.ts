@@ -3,4 +3,4 @@ export type VideoInfo = {
   title: string;
   url: string;
   media?: string;
-}
+};

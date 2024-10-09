@@ -1,11 +1,10 @@
-import { env } from "@/utils/env/env.util";
 import type { ButtonRunContext, ButtonRunResult } from "arcscord";
+import { env } from "@/utils/env/env.util";
 import { anyToError, Button, ButtonError, error, ok } from "arcscord";
 import { verificationModalBuilder } from "../verification_modal/verification_modal.builder";
 import { VERIFY_BUTTON_ID } from "./verify_button.builder";
 
 export class VerifyButton extends Button {
-
   customId = VERIFY_BUTTON_ID;
 
   name = "verify_button";
@@ -24,7 +23,8 @@ export class VerifyButton extends Button {
 
       await ctx.interaction.showModal(verificationModalBuilder);
       return ok(true);
-    } catch (e) {
+    }
+    catch (e) {
       return error(new ButtonError({
         interaction: ctx.interaction,
         message: "failed to send email input modal",
@@ -32,5 +32,4 @@ export class VerifyButton extends Button {
       }));
     }
   }
-
 }

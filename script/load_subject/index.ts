@@ -1,7 +1,7 @@
 import type { XThread } from "@prisma/client";
+import type { ChatCompletionMessageParam } from "openai/resources";
 import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
-import type { ChatCompletionMessageParam } from "openai/resources";
 import { z } from "zod";
 
 const promptV0 = `Hello, im a code that sort threads, your mission is to give a title, a summary and tags for X threads of a web developper. If the thread is not in french, reply only with {"error": "NOFRENCH"}, else reply in json in this format : {
@@ -12,7 +12,6 @@ const promptV0 = `Hello, im a code that sort threads, your mission is to give a 
 }
 reply only with json object`;
 
-
 async function main(): Promise<void> {
   const start = Date.now();
   const prisma = new PrismaClient();
@@ -22,9 +21,9 @@ async function main(): Promise<void> {
   const rawThreads = await prisma.xThread.findMany();
   const subjects = await prisma.xSubject.findMany();
 
-  const threads = rawThreads.filter((thread) => subjects.findIndex((subject) => subject.threadId === thread.id) === -1);
+  const threads = rawThreads.filter(thread => subjects.findIndex(subject => subject.threadId === thread.id) === -1);
 
-  const loadSubject = async(thread: XThread, repeat = 0): Promise<void> => {
+  const loadSubject = async (thread: XThread, repeat = 0): Promise<void> => {
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
@@ -37,8 +36,8 @@ async function main(): Promise<void> {
     ];
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: messages,
-      "response_format": {
+      messages,
+      response_format: {
         type: "json_object",
       },
     });
@@ -57,7 +56,7 @@ async function main(): Promise<void> {
     }).or(
       z.object({
         error: z.string(),
-      })
+      }),
     );
     try {
       const infos = schema.safeParse(JSON.parse(content));
@@ -72,7 +71,6 @@ async function main(): Promise<void> {
         return;
       }
       try {
-
         await prisma.xSubject.create({
           data: {
             id: thread.id,
@@ -86,7 +84,7 @@ async function main(): Promise<void> {
 
         await prisma.xPrompt.create({
           data: {
-            id: thread.id + "v0",
+            id: `${thread.id}v0`,
             version: 0,
             subjectId: thread.id,
             send: JSON.stringify(messages),
@@ -95,13 +93,16 @@ async function main(): Promise<void> {
             receiveTokenUsed: completion.usage?.completion_tokens || 0,
           },
         });
-      } catch (error) {
+      }
+      catch (error) {
         console.error(error);
       }
-    } catch (e) {
+    }
+    catch (e) {
       if (repeat === 3) {
         console.error(e, content);
-      } else {
+      }
+      else {
         console.log(`repeat ${repeat + 1} time for thread ${thread.id}`);
         await loadSubject(thread, repeat + 1);
       }
@@ -122,7 +123,6 @@ async function main(): Promise<void> {
     }
   }
   console.log(`FINISHED in ${Math.round((Date.now() - start) / 1000)}s`);
-
 }
 
 void main();

@@ -1,9 +1,9 @@
+import type { CommandRunContext, CommandRunResult } from "arcscord";
 import { getUnverifiedMembers } from "@/cron/verification_remeber/verification_remember.helper";
 import { env } from "@/utils/env/env.util";
 import { LynxLogger } from "@/utils/log/log.util";
 import { getPresentationMessages } from "@/utils/messages/message.util";
-import type { CommandRunContext, CommandRunResult } from "arcscord";
-import { CommandError, error, SubCommand } from "arcscord";
+import { anyToError, CommandError, error, SubCommand } from "arcscord";
 
 export class ForceVerifySubCommand extends SubCommand {
   subName = "force";
@@ -21,7 +21,7 @@ export class ForceVerifySubCommand extends SubCommand {
           interaction: ctx.interaction,
           context: ctx,
           baseError: memberError,
-        })
+        }),
       );
     }
 
@@ -34,52 +34,57 @@ export class ForceVerifySubCommand extends SubCommand {
           interaction: ctx.interaction,
           context: ctx,
           baseError: err,
-        })
+        }),
       );
     }
 
-    let count = 0,
-      errCount = 0;
+    let count = 0;
+    let errCount = 0;
 
     for (const member of members) {
-      const message = messages.find((m) => m.author.id === member.user.id);
-      const roles = member.roles.valueOf().map((r) => r);
-      if (!roles.some((r) => r.id === env.VERIFY_ROLE_ID)) continue;
-      if (!message) continue;
+      const message = messages.find(m => m.author.id === member.user.id);
+      const roles = member.roles.valueOf().map(r => r);
+      if (!roles.some(r => r.id === env.VERIFY_ROLE_ID))
+        continue;
+      if (!message)
+        continue;
       count++;
 
       try {
         await member.roles.add(env.LYNX_ROLE_ID);
-      } catch (addRoleErr) {
+      }
+      catch (addRoleErr) {
         errCount++;
         LynxLogger.warn(
-          `**FORCE VERIFY** : Fail to add Lynx role for <@${member.user.id}> with id ${member.id}`
+          `**FORCE VERIFY** : Fail to add Lynx role for <@${member.user.id}> with id ${member.id}, error :${anyToError(addRoleErr).message}`,
         );
         continue;
       }
 
       try {
         await member.roles.remove(env.VERIFY_ROLE_ID);
-      } catch (removeRoleErr) {
+      }
+      catch (removeRoleErr) {
         errCount++;
         LynxLogger.warn(
-          `**FORCE VERIFY** : Fail to remove Verification role for <@${member.user.id}> with id ${member.id}`
+          `**FORCE VERIFY** : Fail to remove Verification role for <@${member.user.id}> with id ${member.id}, error :${anyToError(removeRoleErr).message}`,
         );
       }
 
       try {
         await member.send(
-          "Bonjour, un petit bug a été détecter avec le bot de Codeline. C'est ce pourquoi tu as reçut des messages les deux dernier jours. Le problème à été solutionner. Ton compte est bien a présent actif "
+          "Bonjour, un petit bug a été détecter avec le bot de Codeline. C'est ce pourquoi tu as reçut des messages les deux dernier jours. Le problème à été solutionner. Ton compte est bien a présent actif ",
         );
-      } catch (messageError) {
+      }
+      catch (messageErr) {
         errCount++;
         LynxLogger.warn(
-          `**FORCE VERIFY** : Fail to send message for <@${member.user.id}> with id ${member.id}`
+          `**FORCE VERIFY** : Fail to send message for <@${member.user.id}> with id ${member.id}, error :${anyToError(messageErr).message}`,
         );
       }
 
       LynxLogger.info(
-        `**FORCE VERIFY** : update role of <@${member.user.id}>, link to presentation [message](${message.url})`
+        `**FORCE VERIFY** : update role of <@${member.user.id}>, link to presentation [message](${message.url})`,
       );
     }
 

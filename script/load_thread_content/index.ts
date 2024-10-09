@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
 async function main(): Promise<void> {
-
   const start = Date.now();
 
   const prisma = new PrismaClient();
@@ -14,14 +13,12 @@ async function main(): Promise<void> {
     },
   });
 
-
   let i = 0;
   let lastPercent = -1;
   for (const thread of threads) {
-
     let content = "";
     for (const post of thread.posts.sort((a, b) => a.createAt.getDate() - b.createAt.getDate())) {
-      content += post.content + ";\n;";
+      content += `${post.content};\n;`;
     }
     await prisma.xThread.update({
       where: { id: thread.id },

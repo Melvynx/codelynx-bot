@@ -33,7 +33,6 @@ client.componentManager.loadComponents([
   new VerifyButton(client),
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 client.on("ready", async () => {
   const commands = [
     new SearchCommand(client),
@@ -46,7 +45,7 @@ client.on("ready", async () => {
   const data = client.commandManager.loadCommands(commands);
   const apisCommands = await client.commandManager.pushGuildCommands(
     env.SERVER_ID,
-    data
+    data,
   );
   client.commandManager.resolveCommands(commands, apisCommands);
 

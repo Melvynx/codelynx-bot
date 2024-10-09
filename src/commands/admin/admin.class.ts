@@ -1,10 +1,11 @@
 import type {
   ArcClient,
   CommandRunContext,
-  CommandRunResult, InteractionDefaultReplyOptions,
+  CommandRunResult,
+  InteractionDefaultReplyOptions,
   SlashCmdBuilder,
   SlashCommandWithSubs,
-  SubSlashCommandList
+  SubSlashCommandList,
 } from "arcscord";
 import { Command } from "arcscord";
 import { adminCommandBuilder } from "./admin.builder";
@@ -12,7 +13,6 @@ import { ForceVerifySubCommand } from "./force/admin_force_verify.class";
 import { SetupVerifySubCommand } from "./setup/verify.class";
 
 export class AdminCommand extends Command implements SlashCommandWithSubs {
-
   name = "admin";
 
   slashBuilder = adminCommandBuilder as SlashCmdBuilder;
@@ -38,5 +38,4 @@ export class AdminCommand extends Command implements SlashCommandWithSubs {
   async run(ctx: CommandRunContext): Promise<CommandRunResult> {
     return this.handleSubCommands(ctx);
   }
-
 }

@@ -10,10 +10,9 @@ export type OpenAiErrorOptions = ErrorOptions & {
     receive: number;
     total: number;
   };
-}
+};
 
 export class OpenAIError extends BaseError {
-
   model: string;
 
   send: string;
@@ -48,5 +47,4 @@ export class OpenAIError extends BaseError {
 
     return debugs;
   }
-
 }

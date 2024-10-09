@@ -1,12 +1,12 @@
-import OpenAI from "openai";
 import type { Result } from "arcscord";
-import { anyToError, ArcLogger, BaseError, error, ok } from "arcscord";
-import type { PostInfos, SearchResult } from "./search.type";
 import type { ChatCompletionMessageParam } from "openai/resources";
-import { cleanPrompt } from "./search.const";
+import type { PostInfos, SearchResult } from "./search.type";
+import { anyToError, ArcLogger, BaseError, error, ok } from "arcscord";
+import OpenAI from "openai";
 import { OpenAIError } from "../error/openai_error.class";
-import { prisma } from "../prisma/prisma.util";
 import { generateId } from "../id/id.util";
+import { prisma } from "../prisma/prisma.util";
+import { cleanPrompt } from "./search.const";
 import { searchX } from "./x/x.util";
 import { youtubeSearch } from "./youtube/youtube.util";
 
@@ -16,7 +16,7 @@ const results = new Map<string, SearchResult>();
 
 export const searchLog = new ArcLogger("search");
 
-export const cleanSearch = async(text: string): Promise<Result<string, BaseError>> => {
+export async function cleanSearch(text: string): Promise<Result<string, BaseError>> {
   const messages: ChatCompletionMessageParam[] = [
     {
       role: "system",
@@ -28,11 +28,9 @@ export const cleanSearch = async(text: string): Promise<Result<string, BaseError
     },
   ];
   try {
-
-
     const response = await openAIClient.chat.completions.create({
       model: "gpt-4o",
-      messages: messages,
+      messages,
     });
 
     const clean = response.choices[0]?.message.content;
@@ -62,25 +60,21 @@ export const cleanSearch = async(text: string): Promise<Result<string, BaseError
           version: 0,
         },
       });
-    } catch (err) {
+    }
+    catch (err) {
       searchLog.error("failed update db for search clean", [anyToError(err).message]);
     }
     return ok(clean);
-
-  } catch (err) {
+  }
+  catch (err) {
     return error(new BaseError({
       message: "failed to clean search",
       baseError: anyToError(err),
     }));
   }
+}
 
-};
-
-
-export const search = async(
-  searchTerm: string,
-  cleanSearchingTerm = false
-): Promise<Result<SearchResult, BaseError>> => {
+export async function search(searchTerm: string, cleanSearchingTerm = false): Promise<Result<SearchResult, BaseError>> {
   if (cleanSearchingTerm) {
     const [clean, err] = await cleanSearch(searchTerm);
     if (err) {
@@ -107,7 +101,7 @@ export const search = async(
 
   const cleanThreads: PostInfos[] = [];
   for (const id of ids) {
-    const thread = threads.find((thread) => thread.id === id);
+    const thread = threads.find(thread => thread.id === id);
     if (!thread) {
       continue;
     }
@@ -132,8 +126,8 @@ export const search = async(
   results.set(result.id, result);
 
   return ok(result);
-};
+}
 
-export const getResults = (id: string): SearchResult|undefined => {
+export function getResults(id: string): SearchResult | undefined {
   return results.get(id);
-};
+}
