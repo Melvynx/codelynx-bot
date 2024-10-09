@@ -6,6 +6,7 @@ export const envSchema = z.object({
   OPENAI_API_KEY: z.string(),
   GOOGLE_API_KEY: z.string(),
   CODELINE_TOKEN: z.string(),
+  CODELINE_WEBHOOK_SECRET: z.string(),
 
   // URLS
   DATABASE_URL: z.string(),
