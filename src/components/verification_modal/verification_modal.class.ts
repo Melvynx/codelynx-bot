@@ -1,6 +1,9 @@
 import type { ModalSubmitRunContext, ModalSubmitRunResult } from "arcscord";
 import type { GuildMember } from "discord.js";
-import { getCodelineRoleDelta } from "@/utils/api/codeline/codeline.role-mapping";
+import {
+  getCodelineRoleDelta,
+  getCodelineRoleIdsForProducts,
+} from "@/utils/api/codeline/codeline.role-mapping";
 import { resolveCodelineRoleState } from "@/utils/api/codeline/codeline.role-state";
 import { displayName } from "@/utils/format/formatUser";
 import { LynxLogger } from "@/utils/log/log.util";
@@ -133,44 +136,81 @@ export class VerificationModal extends ModalSubmitComponent {
     );
 
     const verificationRoleId = haveDoPresentation ? env.LYNX_ROLE_ID : env.VERIFY_ROLE_ID;
-    const {
-      desiredRoleIds: desiredFormationRoleIds,
-      additionalManagedRoleIds,
-    } = await resolveCodelineRoleState(user.products.map(product => product.id));
-    const { roleIdsToAdd, roleIdsToRemove } = getCodelineRoleDelta(
-      member.roles.cache.keys(),
-      desiredFormationRoleIds,
-      additionalManagedRoleIds,
-    );
-    if (!member.roles.cache.has(verificationRoleId))
-      roleIdsToAdd.unshift(verificationRoleId);
+
+    // The verification role is the only step that must succeed : it is granted
+    // before Codeline and the database are contacted, so an outage on either
+    // side can never leave a member unverified.
+    if (!member.roles.cache.has(verificationRoleId)) {
+      try {
+        await member.roles.add(verificationRoleId);
+      }
+      catch (e) {
+        return error(
+          new ModalSubmitError({
+            message: "failed to add verification role",
+            interaction: ctx.interaction,
+            baseError: anyToError(e),
+          }),
+        );
+      }
+    }
 
     try {
       await updateUserId(email, ctx.interaction.user.id);
     }
     catch (e) {
-      return error(
-        new ModalSubmitError({
-          message: "failed to link Codeline user",
-          interaction: ctx.interaction,
-          baseError: anyToError(e),
-        }),
+      LynxLogger.warn(
+        `VERIFICATION : failed to link ${displayName(member)} to codeline account `
+        + `\`${email}\` : ${anyToError(e).message}`,
       );
     }
 
+    const entitlementIds = user.products.map(product => product.id);
+    let desiredFormationRoleIds: string[];
+    let additionalManagedRoleIds: string[];
     try {
-      for (const roleId of roleIdsToAdd)
-        await member.roles.add(roleId);
-      for (const roleId of roleIdsToRemove)
-        await member.roles.remove(roleId);
+      ({ desiredRoleIds: desiredFormationRoleIds, additionalManagedRoleIds }
+        = await resolveCodelineRoleState(entitlementIds));
     }
     catch (e) {
-      return error(
-        new ModalSubmitError({
-          message: "failed to synchronize roles",
-          interaction: ctx.interaction,
-          baseError: anyToError(e),
-        }),
+      // Database unreachable : fall back on the static mapping so formation
+      // roles are still granted, and manage nothing else to avoid removing
+      // roles we cannot resolve.
+      LynxLogger.warn(
+        `VERIFICATION : failed to resolve codeline role state for ${displayName(member)}, `
+        + `falling back on the static mapping : ${anyToError(e).message}`,
+      );
+      desiredFormationRoleIds = getCodelineRoleIdsForProducts(entitlementIds);
+      additionalManagedRoleIds = [];
+    }
+
+    const { roleIdsToAdd, roleIdsToRemove } = getCodelineRoleDelta(
+      member.roles.cache.keys(),
+      desiredFormationRoleIds,
+      additionalManagedRoleIds,
+    );
+
+    const roleSyncFailures: string[] = [];
+    for (const roleId of roleIdsToAdd) {
+      try {
+        await member.roles.add(roleId);
+      }
+      catch (e) {
+        roleSyncFailures.push(`add <@&${roleId}> : ${anyToError(e).message}`);
+      }
+    }
+    for (const roleId of roleIdsToRemove) {
+      try {
+        await member.roles.remove(roleId);
+      }
+      catch (e) {
+        roleSyncFailures.push(`remove <@&${roleId}> : ${anyToError(e).message}`);
+      }
+    }
+    if (roleSyncFailures.length > 0) {
+      LynxLogger.warn(
+        `VERIFICATION : failed to synchronize some roles of ${displayName(member)} : ${
+          roleSyncFailures.join(", ")}`,
       );
     }
 
@@ -185,53 +225,45 @@ export class VerificationModal extends ModalSubmitComponent {
       await member.setNickname(name, "Vérification rename");
     }
     catch (e) {
-      return error(
-        new ModalSubmitError({
-          message: "failed to rename user",
-          interaction: ctx.interaction,
-          baseError: anyToError(e),
-        }),
+      LynxLogger.warn(
+        `VERIFICATION : failed to rename ${displayName(member)} to \`${name}\` : ${
+          anyToError(e).message}`,
       );
     }
 
     if (!haveDoPresentation) {
-      try {
-        const channel = member.guild.channels.cache.get(env.WELCOME_CHANNEL_ID);
-        if (!channel || channel.type !== ChannelType.GuildText) {
-          return error(
-            new ModalSubmitError({
-              message:
-                "failed to send welcome message, channel not found or invalid type",
-              interaction: ctx.interaction,
-              debugs: {
-                channelId: env.WELCOME_CHANNEL_ID,
-                type: channel?.type,
-                except: ChannelType.GuildText,
-              },
-            }),
-          );
-        }
+      const welcomeMessage = env.WELCOME_MESSAGE.replaceAll(
+        "{mention}",
+        ctx.interaction.user.toString(),
+      );
+      const channel = member.guild.channels.cache.get(env.WELCOME_CHANNEL_ID);
 
-        await channel.send(
-          env.WELCOME_MESSAGE.replaceAll(
-            "{mention}",
-            ctx.interaction.user.toString(),
-          ),
-        );
-        await member.send(
-          env.WELCOME_MESSAGE.replaceAll(
-            "{mention}",
-            ctx.interaction.user.toString(),
-          ),
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        LynxLogger.warn(
+          `VERIFICATION : failed to send welcome message of ${displayName(member)}, `
+          + `channel ${env.WELCOME_CHANNEL_ID} not found or invalid type (${channel?.type})`,
         );
       }
+      else {
+        try {
+          await channel.send(welcomeMessage);
+        }
+        catch (e) {
+          LynxLogger.warn(
+            `VERIFICATION : failed to send welcome message of ${displayName(member)} `
+            + `in <#${env.WELCOME_CHANNEL_ID}> : ${anyToError(e).message}`,
+          );
+        }
+      }
+
+      try {
+        await member.send(welcomeMessage);
+      }
       catch (e) {
-        return error(
-          new ModalSubmitError({
-            message: "failed to send welcome message",
-            interaction: ctx.interaction,
-            baseError: anyToError(e),
-          }),
+        // Members with closed DMs are expected, this must not fail the verification.
+        LynxLogger.warn(
+          `VERIFICATION : failed to send welcome DM to ${displayName(member)} : ${
+            anyToError(e).message}`,
         );
       }
     }

@@ -31,7 +31,11 @@ export async function getPresentationMessages(client: ArcClient): Promise<Result
     let lastMessageId: string | undefined;
     for (let i = 0; i < 4; i++) {
       // noinspection JSUnusedAssignment
-      messages.push(...(await channel.messages.fetch({ limit: 100, before: lastMessageId })).map(m => m));
+      const fetched = await channel.messages.fetch({ limit: 100, before: lastMessageId });
+      if (fetched.size === 0)
+        break;
+
+      messages.push(...fetched.map(m => m));
       messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
       lastMessageId = messages[0].id;
     }
