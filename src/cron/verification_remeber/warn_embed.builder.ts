@@ -14,7 +14,7 @@ export function verificationWarnEmbedBuilder(member: GuildMember) {
       },\n\nTu as rejoint le serveur **Codelynx Formation** le : ${format(
         member.joinedAt!,
         "dd/MM/yyyy",
-      )}, mais tu n'as pas encore terminé la vérification de ton compte.\nC'est une étape importante pour lier ton compte [Codeline](https://codeline.app/home) à Discord et accéder à l'ensemble du serveur.\n*⚠️ Sans cette vérification, tu risques d'être expulsé dans les prochains jours.⚠️*\n_\n\n_`,
+      )}, mais tu n'as pas encore terminé la vérification de ton compte.\nC'est une étape importante pour lier ton compte [Codeline](https://codeline.app/home) à Discord et accéder à l'ensemble du serveur.\nPrends quelques minutes pour la finaliser. Si quelque chose te bloque, un modérateur peut t'aider.\n_\n\n_`,
     )
     .addFields(
       {
@@ -31,8 +31,7 @@ export function verificationWarnEmbedBuilder(member: GuildMember) {
     .setColor("#00b0f4")
     .setFooter({
       text: "Codelynx Bot",
-      iconURL:
-        env.ICON_URL,
+      iconURL: env.ICON_URL,
     })
     .setTimestamp();
 }

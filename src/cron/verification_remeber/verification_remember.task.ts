@@ -1,16 +1,29 @@
 import type { TaskResult, TaskType } from "arcscord";
+import type { GuildMember } from "discord.js";
 import { getTicketsChannels } from "@/utils/chanels/chanels.utils";
 import { env } from "@/utils/env/env.util";
 import { displayName } from "@/utils/format/formatUser";
 import { LynxLogger } from "@/utils/log/log.util";
 import { anyToError, defaultLogger, error, ok, Task, TaskError } from "arcscord";
 import { differenceInDays, subDays } from "date-fns";
-import { verificationKickEmbedBuilder } from "./kick_embed.builder";
 import {
   getUnverifiedMembers,
   isUserHaveTicket,
 } from "./verification_remember.helper";
 import { verificationWarnEmbedBuilder } from "./warn_embed.builder";
+
+const MAX_MEMBERS_IN_REVIEW_LOG = 50;
+
+function manualReviewLog(members: GuildMember[]): string {
+  const visibleMembers = members.slice(0, MAX_MEMBERS_IN_REVIEW_LOG);
+  const remainingCount = members.length - visibleMembers.length;
+  const memberList = visibleMembers.map(member => displayName(member)).join("\n");
+  const remainingMessage = remainingCount > 0
+    ? `\n... et ${remainingCount} autre(s) membre(s)`
+    : "";
+
+  return `**VERIFICATION_REVIEW** : ${members.length} membre(s) à vérifier manuellement. Aucune expulsion automatique.\n${memberList}${remainingMessage}`;
+}
 
 export class VerificationRememberTask extends Task {
   name = "Rappel de vérification";
@@ -48,13 +61,13 @@ export class VerificationRememberTask extends Task {
       );
     }
 
-    const membersToKick = usersWithoutLynxRole.filter(
+    const membersToReview = usersWithoutLynxRole.filter(
       m =>
         m.joinedTimestamp! < subDays(new Date(), Number(env.DAY_TO_KICK)).getTime(),
     );
     const membersToWarn = usersWithoutLynxRole.filter(
       m =>
-        !membersToKick.includes(m)
+        !membersToReview.includes(m)
         && m.joinedTimestamp! < subDays(new Date(), Number(env.DAY_TO_WARN)).getTime(),
     );
 
@@ -79,38 +92,12 @@ export class VerificationRememberTask extends Task {
       }
     }
 
-    for (const member of membersToKick) {
-      if (isUserHaveTicket(ticketChannels, member.id))
-        continue;
-      try {
-        await member.send({ embeds: [verificationKickEmbedBuilder()] });
-        LynxLogger.info(
-          `**VERIFICATION_REMEMBER** : ${displayName(member)} à reçut une explication de kick. Il est présent sur le serveur de puis ${
-            member.joinedTimestamp
-              ? differenceInDays(Date.now(), member.joinedTimestamp)
-              : "inconnue"
-          } jours`,
-        );
-      }
-      catch (err) {
-        defaultLogger.warning(
-          `Unable to send kick message to ${displayName(member)} with id ${member.id}, cause : ${anyToError(err).message}`,
-        );
-        continue;
-      }
+    const membersNeedingManualReview = membersToReview.filter(
+      member => !isUserHaveTicket(ticketChannels, member.id),
+    );
 
-      try {
-        await member.kick();
-        LynxLogger.info(
-          `**VERIFICATION_REMEMBER** : ${displayName(member)} à été kick due à la non vérification de son compte`,
-        );
-      }
-      catch (err) {
-        defaultLogger.warning(
-          `Unable to kick ${displayName(member)} with id ${member.id}, cause : ${anyToError(err).message}`,
-        );
-      }
-    }
+    if (membersNeedingManualReview.length > 0)
+      LynxLogger.warn(manualReviewLog(membersNeedingManualReview));
 
     return ok(true);
   }
