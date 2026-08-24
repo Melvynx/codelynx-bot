@@ -42,6 +42,57 @@ describe("codeline user URL", () => {
   });
 });
 
+describe("getUser", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns no user when Codeline responds with its not-found status", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      error: "User not found.",
+      status: 400,
+    }, {
+      status: 400,
+      statusText: "Bad Request",
+    })));
+
+    await expect(getUser("unknown@example.com")).resolves.toEqual([null, null]);
+  });
+
+  it("returns an error for a different Codeline 400 response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      error: "Invalid filter.",
+      status: 400,
+    }, { status: 400, statusText: "Bad Request" })));
+
+    const [user, err] = await getUser("lynx@example.com");
+
+    expect(user).toBeNull();
+    expect(err).not.toBeNull();
+  });
+
+  it("returns an error for a malformed Codeline 400 response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json", {
+      status: 400,
+      statusText: "Bad Request",
+    })));
+
+    const [user, err] = await getUser("lynx@example.com");
+
+    expect(user).toBeNull();
+    expect(err).not.toBeNull();
+  });
+
+  it.each([401, 429, 500])("returns an error when Codeline responds with %i", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status })));
+
+    const [user, err] = await getUser("lynx@example.com");
+
+    expect(user).toBeNull();
+    expect(err).not.toBeNull();
+  });
+});
+
 describe("updateUserId", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

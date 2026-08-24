@@ -11,6 +11,21 @@ export async function getUser(email: string): Promise<Result<User["user"] | null
         Authorization: `Bearer ${env.CODELINE_TOKEN}`,
       },
     });
+    if (response.status === 400) {
+      const data: unknown = await response.json();
+      if (
+        typeof data === "object"
+        && data !== null
+        && !Array.isArray(data)
+        && Object.keys(data).length === 2
+        && "error" in data
+        && data.error === "User not found."
+        && "status" in data
+        && data.status === 400
+      ) {
+        return ok(null);
+      }
+    }
     if (!response.ok) {
       throw new Error(`Codeline request failed: ${response.status} ${response.statusText}`);
     }
